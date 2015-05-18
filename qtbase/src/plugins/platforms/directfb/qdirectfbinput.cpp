@@ -42,6 +42,8 @@
 
 #include <directfb.h>
 
+#include "qdirectfbwmframe.h"
+
 QT_BEGIN_NAMESPACE
 
 QDirectFbInput::QDirectFbInput(IDirectFB *dfb, IDirectFBDisplayLayer *dfbLayer)
@@ -83,6 +85,20 @@ void QDirectFbInput::addWindow(IDirectFBWindow *window, QWindow *platformWindow)
     window->AttachEventBuffer(window, m_eventBuffer.data());
 }
 
+void QDirectFbInput::addWMFrame(IDirectFBWindow *window, QDirectFbWMFrame *frame) {
+    DFBResult res;
+    DFBWindowID id;
+
+    res = window->GetID(window, &id);
+    if (res != DFB_OK) {
+        DirectFBError("QDirectFbInput::addWMFrame", res);
+        return;
+    }
+
+    m_tlfMap.insert(id, frame);
+    window->AttachEventBuffer(window, m_eventBuffer.data());
+}
+
 void QDirectFbInput::removeWindow(IDirectFBWindow *window)
 {
     DFBResult res;
@@ -96,6 +112,21 @@ void QDirectFbInput::removeWindow(IDirectFBWindow *window)
 
     window->DetachEventBuffer(window, m_eventBuffer.data());
     m_tlwMap.remove(id);
+}
+
+void QDirectFbInput::removeWMFrame(IDirectFBWindow *window)
+{
+    DFBResult res;
+    DFBWindowID id;
+
+    res = window->GetID(window, &id);
+    if (res != DFB_OK) {
+        DirectFBError("QDirectFbInput::removeWMFrame", res);
+        return;
+    }
+
+    window->DetachEventBuffer(window, m_eventBuffer.data());
+    m_tlfMap.remove(id);
 }
 
 void QDirectFbInput::handleEvents()
@@ -155,8 +186,15 @@ void QDirectFbInput::handleMouseEvents(const DFBEvent &event)
 
     long timestamp = (event.window.timestamp.tv_sec*1000) + (event.window.timestamp.tv_usec/1000);
 
-    QWindow *tlw = m_tlwMap.value(event.window.window_id);
-    QWindowSystemInterface::handleMouseEvent(tlw, timestamp, p, globalPos, buttons);
+    if (m_tlwMap.contains(event.window.window_id)) {
+        QWindow *tlw = m_tlwMap.value(event.window.window_id);
+
+        QWindowSystemInterface::handleMouseEvent(tlw, timestamp, p, globalPos, buttons);
+    }
+    else if (m_tlfMap.contains(event.window.window_id)) {
+        QDirectFbWMFrame *frame = m_tlfMap.value(event.window.window_id);
+        frame->handleMouseEvent(timestamp, p, globalPos, buttons);
+    }
 }
 
 void QDirectFbInput::handleWheelEvent(const DFBEvent &event)

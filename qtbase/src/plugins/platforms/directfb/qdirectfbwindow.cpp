@@ -40,6 +40,8 @@
 
 #include <directfb.h>
 
+#include "qdirectfbwmframe.h"
+
 QT_BEGIN_NAMESPACE
 
 QDirectFbWindow::QDirectFbWindow(QWindow *tlw, QDirectFbInput *inputhandler)
@@ -89,15 +91,32 @@ void QDirectFbWindow::createDirectFBWindow()
         if (result != DFB_OK)
             DirectFBError("QDirectFbWindow: failed to create window", result);
 
+        if (window()->type() == Qt::Window || window()->type() == Qt::Dialog) {
+            m_wmframe = new QDirectFbWMFrame(this);
+            m_wmframe->createWMFrame(m_inputHandler);
+        }
+
         m_dfbWindow->SetOpacity(m_dfbWindow.data(), 0xff);
         m_inputHandler->addWindow(m_dfbWindow.data(), window());
+        //setVisible(window()->isVisible());
+        //setGeometry(window()->geometry());
     }
 }
 
 QDirectFbWindow::~QDirectFbWindow()
 {
     m_inputHandler->removeWindow(m_dfbWindow.data());
+    if (window()->type() == Qt::Window || window()->type() == Qt::Dialog) {
+        delete m_wmframe;
+    }
     m_dfbWindow->Destroy(m_dfbWindow.data());
+}
+
+void QDirectFbWindow::setWindowTitle(const QString &title)
+{
+    if (window()->type() == Qt::Window || window()->type() == Qt::Dialog) {
+        m_wmframe->renderFrame();
+    }
 }
 
 void QDirectFbWindow::setGeometry(const QRect &rect)
@@ -105,6 +124,16 @@ void QDirectFbWindow::setGeometry(const QRect &rect)
     QPlatformWindow::setGeometry(rect);
     m_dfbWindow->SetBounds(m_dfbWindow.data(), rect.x(),rect.y(),
                            rect.width(), rect.height());
+
+    bool isMoveOnly = (rect.topLeft() != geometry().topLeft()) && (rect.size() == geometry().size());
+    if (window()->type() == Qt::Window || window()->type() == Qt::Dialog) {
+        if (isMoveOnly) {
+            m_wmframe->updatePosition();
+        }
+        else {
+            m_wmframe->updateGeometry();
+        }
+    }
 }
 
 void QDirectFbWindow::setOpacity(qreal level)
@@ -131,6 +160,10 @@ void QDirectFbWindow::setVisible(bool visible)
 
         if (window()->isTopLevel() && visible)
             QPlatformWindow::setVisible(visible);
+
+        if (window()->type() == Qt::Window || window()->type() == Qt::Dialog) {
+            m_wmframe->updateVisibility();
+        }
     }
 }
 
@@ -154,12 +187,18 @@ void QDirectFbWindow::raise()
 {
     if (window()->type() != Qt::Desktop)
         m_dfbWindow->RaiseToTop(m_dfbWindow.data());
+
+    if (window()->type() == Qt::Window || window()->type() == Qt::Dialog)
+        m_wmframe->updateStacking();
 }
 
 void QDirectFbWindow::lower()
 {
     if (window()->type() != Qt::Desktop)
         m_dfbWindow->LowerToBottom(m_dfbWindow.data());
+
+    if (window()->type() == Qt::Window || window()->type() == Qt::Dialog)
+        m_wmframe->updateStacking();
 }
 
 WId QDirectFbWindow::winId() const

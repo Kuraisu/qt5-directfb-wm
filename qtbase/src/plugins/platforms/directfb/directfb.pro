@@ -18,6 +18,7 @@ SOURCES = main.cpp \
     qdirectfbinput.cpp \
     qdirectfbcursor.cpp \
     qdirectfbwindow.cpp \
+    qdirectfbwmframe.cpp \
     qdirectfbscreen.cpp
 HEADERS = qdirectfbintegration.h \
     qdirectfbbackingstore.h \
@@ -26,6 +27,7 @@ HEADERS = qdirectfbintegration.h \
     qdirectfbinput.h \
     qdirectfbcursor.h \
     qdirectfbwindow.h \
+    qdirectfbwmframe.h \
     qdirectfbscreen.h \
     qdirectfbeglhooks.h
 

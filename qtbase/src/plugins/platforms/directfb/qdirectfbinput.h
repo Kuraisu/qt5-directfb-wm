@@ -45,13 +45,17 @@
 
 QT_BEGIN_NAMESPACE
 
+class QDirectFbWMFrame;
+
 class QDirectFbInput : public QThread
 {
     Q_OBJECT
 public:
     QDirectFbInput(IDirectFB *dfb, IDirectFBDisplayLayer *dfbLayer);
     void addWindow(IDirectFBWindow *window, QWindow *platformWindow);
+    void addWMFrame(IDirectFBWindow *window, QDirectFbWMFrame *frame);
     void removeWindow(IDirectFBWindow *window);
+    void removeWMFrame(IDirectFBWindow *window);
 
     void stopInputEventLoop();
 
@@ -75,6 +79,7 @@ private:
 
     bool m_shouldStop;
     QHash<DFBWindowID,QWindow *>m_tlwMap;
+    QHash<DFBWindowID,QDirectFbWMFrame *>m_tlfMap;
 };
 
 QT_END_NAMESPACE

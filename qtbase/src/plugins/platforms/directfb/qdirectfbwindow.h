@@ -39,6 +39,10 @@
 #include "qdirectfbconvenience.h"
 #include "qdirectfbinput.h"
 
+//#include "qdirectfbwmframe.h"
+
+class QDirectFbWMFrame;
+
 QT_BEGIN_NAMESPACE
 
 class QDirectFbWindow : public QPlatformWindow
@@ -52,6 +56,7 @@ public:
 
     void setVisible(bool visible);
 
+    void setWindowTitle(const QString &title);
     void setWindowFlags(Qt::WindowFlags flags);
     bool setKeyboardGrabEnabled(bool grab);
     bool setMouseGrabEnabled(bool grab);
@@ -69,6 +74,7 @@ protected:
     QDirectFBPointer<IDirectFBSurface> m_dfbSurface;
     QDirectFBPointer<IDirectFBWindow> m_dfbWindow;
     QDirectFbInput *m_inputHandler;
+    QDirectFbWMFrame *m_wmframe;
 };
 
 QT_END_NAMESPACE
